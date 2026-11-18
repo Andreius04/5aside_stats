@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#00E676"          # Verde campo/neon per pulsanti e selettori
+backgroundColor = "#0E1117"       # Sfondo principale molto scuro
+secondaryBackgroundColor = "#1A1F2B" # Sfondo della sidebar e delle card
+textColor = "#F0F2F6"             # Testo bianco sporco (non stanca gli occhi)
+font = "sans serif"
