@@ -100,6 +100,12 @@ def load_data():
         df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
     df['SCARTO'] = df['GOL FATTI SQUADRA'] - df['GOL SUBITI SQUADRA']
+    # Percentuale di gol del giocatore sui gol della squadra (gestisce lo 0 a 0)
+    df['INCIDENZA_GOL'] = df.apply(
+        lambda r: (r['GOL SEGNATI'] / r['GOL FATTI SQUADRA'] * 100) if r['GOL FATTI SQUADRA'] > 0 else 0.0,
+        axis=1
+    )
+    df['MATCH_TEAM'] = df['DATA'].dt.strftime('%Y-%m-%d') + '-' + df['SQUADRA']
     # Chiave univoca per identificare chi ha giocato nella stessa squadra
     df['MATCH_TEAM'] = df['DATA'].dt.strftime('%Y-%m-%d') + '-' + df['SQUADRA']
     return df
@@ -114,17 +120,20 @@ def calcola_statistiche(df):
         Presenze=('DATA', 'count'),
         Vittorie=('VITTORIA', 'sum'),
         Gol_Totali=('GOL SEGNATI', 'sum'),
-        Scarto_Reti_Tot=('SCARTO', 'sum')
+        Scarto_Reti_Tot=('SCARTO', 'sum'),
+        Incidenza_Gol=('INCIDENZA_GOL', 'mean')
     ).reset_index()
 
     stats['% Vittorie'] = (stats['Vittorie'] / stats['Presenze'] * 100).round(1)
     stats['Media Gol'] = (stats['Gol_Totali'] / stats['Presenze']).round(2)
     stats['Scarto Medio'] = (stats['Scarto_Reti_Tot'] / stats['Presenze']).round(2)
+    stats['Incidenza Gol'] = (stats['Incidenza_Gol']).round(1)
 
     stats = stats.rename(columns={
         'GIOCATORE': 'Giocatore',
         'Gol_Totali': 'Gol Totali',
-        'Scarto_Reti_Tot': 'Scarto Reti'
+        'Scarto_Reti_Tot': 'Scarto Reti',
+        'Incidenza_Gol':  '% Gol Squadra'
     })
 
     for col in ['Presenze', 'Vittorie', 'Gol Totali', 'Scarto Reti']:
@@ -206,7 +215,7 @@ with tab_classifiche:
     with col_ord:
         criterio = st.selectbox(
             "Ordina giocatori per:",
-            ["Gol Totali", "Presenze", "Vittorie", "% Vittorie", "Media Gol", "Scarto Reti", "Scarto Medio"]
+            ["Gol Totali", "Presenze", "Vittorie", "% Vittorie", "Media Gol", "% Gol Squadra", "Scarto Reti", "Scarto Medio"]
         )
     with col_dir:
         ordine = st.radio("Ordine:", ["Decrescente", "Crescente"], horizontal=True)
@@ -221,7 +230,9 @@ with tab_classifiche:
         column_config={
             "% Vittorie": st.column_config.NumberColumn(format="%.1f%%"),
             "Media Gol": st.column_config.NumberColumn(format="%.2f"),
+            "Incidenza Gol" : st.column_config.NumberColumn(format="%.1f%%"),
             "Scarto Medio": st.column_config.NumberColumn(format="%.2f"),
+
         }
     )
 
@@ -241,6 +252,7 @@ with tab_giocatore:
     c1.metric("Presenze", f"{riga_g['Presenze']}")
     c2.metric("Vittorie", f"{riga_g['Vittorie']}", f"{riga_g['% Vittorie']}% Win Rate")
     c3.metric("Gol Totali", f"{riga_g['Gol Totali']}", f"{riga_g['Media Gol']} a partita")
+    c4.metric("% Gol Squadra", f"{riga_g['% Gol Squadra']}%")
     c4.metric("Scarto Reti", f"{riga_g['Scarto Reti']:+d}", f"{riga_g['Scarto Medio']:+.2f} medio")
 
     st.markdown("---")
